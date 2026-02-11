@@ -830,19 +830,19 @@
 
             campaignsTableBody.innerHTML = sorted.map(c => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-3 text-sm font-mono text-indigo-600 font-semibold">${c.id_proposta || '-'}</td>
-                    <td class="px-4 py-3 text-sm font-bold text-emerald-700">${c.rg || '<span class="text-amber-500">Pendente</span>'}</td>
-                    <td class="px-4 py-3 text-sm font-semibold text-slate-700 max-w-[200px] truncate" title="${c.nome || ''}">${c.nome || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${c.mes || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-700 font-medium">${c.anunciante || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600 max-w-[140px] truncate" title="${c.campanha || ''}">${c.campanha || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-700">${c.produto || '-'}</td>
-                    <td class="px-4 py-3 text-sm font-semibold text-emerald-700">R$ ${parseFloat(c.valor_bruto || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${c.desc_agencia ? parseFloat(c.desc_agencia).toFixed(1) + '%' : '-'}</td>
-                    <td class="px-4 py-3 text-sm font-bold text-slate-900">R$ ${parseFloat(c.valor_liquido || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${c.executivo || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${c.vertical || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-slate-600">${c.projeto || '-'}</td>
+                    <td class="px-4 py-3 text-xs font-mono text-indigo-600 font-semibold">${c.id_proposta || '-'}</td>
+                    <td class="px-4 py-3 text-xs font-bold text-emerald-700">${c.rg || '<span class="text-amber-500">Pendente</span>'}</td>
+                    <td class="px-4 py-3 text-xs font-semibold text-slate-700 max-w-[200px] truncate" title="${c.nome || ''}">${c.nome || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.mes || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-700 font-medium">${c.anunciante || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600 max-w-[140px] truncate" title="${c.campanha || ''}">${c.campanha || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-700">${c.produto || '-'}</td>
+                    <td class="px-4 py-3 text-xs font-semibold text-emerald-700">R$ ${parseFloat(c.valor_bruto || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.desc_agencia ? parseFloat(c.desc_agencia).toFixed(1) + '%' : '-'}</td>
+                    <td class="px-4 py-3 text-xs font-bold text-slate-900">R$ ${parseFloat(c.valor_liquido || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.executivo || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.vertical || '-'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.projeto || '-'}</td>
                     <td class="px-4 py-3">
                         <span class="status-badge ${
                             c.finalizada === 'Finalizada' ? 'bg-emerald-100 text-emerald-700' :
@@ -878,140 +878,133 @@
             link.click();
         };
 
-        // INTEGRAÇÃO COM COMERCIAL
+        // INTEGRAÇÃO COM COMERCIAL - SOLUÇÃO COM UNIQUE ID
         const setupComercialListener = () => {
-            // Controle de processamento para evitar duplicações
-            const processingProposals = new Set(); // Propostas sendo processadas AGORA
-            
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION), async (snapshot) => {
                 allProposals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                console.log(`📊 Propostas carregadas/atualizadas: ${allProposals.length}`);
                 
-                // Processar mudanças sequencialmente (não usar forEach com async)
+                // Processar apenas documentos modificados
                 for (const change of snapshot.docChanges()) {
+                    if (change.type !== 'modified') continue;
+                    
                     const proposal = { id: change.doc.id, ...change.doc.data() };
                     
-                    // Só processar se for PI na casa
+                    // Verificar se é PI na casa
                     if (proposal.status !== 'PI na casa') continue;
                     
-                    console.log(`🔍 Detectada proposta "PI na casa": ${proposal.id_proposta} (ID: ${proposal.id})`);
-                    
-                    // PROTEÇÃO 1: Já foi processada anteriormente?
-                    if (processedProposals.has(proposal.id)) {
-                        console.log(`⏭️ Proposta ${proposal.id} JÁ FOI PROCESSADA ANTERIORMENTE, pulando...`);
+                    // VERIFICAÇÃO ÚNICA: Já existe alguma campanha com este proposta_id?
+                    const jaExiste = allCampaigns.some(c => c.proposta_id === proposal.id);
+                    if (jaExiste) {
+                        console.log(`⏭️ ${proposal.id_proposta}: JÁ TEM CAMPANHA`);
                         continue;
                     }
                     
-                    // PROTEÇÃO 2: Está sendo processada AGORA?
-                    if (processingProposals.has(proposal.id)) {
-                        console.log(`⏳ Proposta ${proposal.id} JÁ ESTÁ SENDO PROCESSADA, pulando...`);
-                        continue;
-                    }
+                    console.log(`\n✨ ${proposal.id_proposta}: CRIANDO...`);
                     
-                    // PROTEÇÃO 3: Já existem campanhas criadas para esta proposta?
-                    const existingCampaigns = allCampaigns.filter(c => c.proposta_id === proposal.id);
-                    if (existingCampaigns.length > 0) {
-                        console.log(`✅ Proposta ${proposal.id} JÁ POSSUI ${existingCampaigns.length} campanha(s), marcando como processada`);
-                        processedProposals.add(proposal.id);
-                        continue;
-                    }
-
-                    console.log(`✨ NOVA proposta detectada! Iniciando criação de campanha(s)...`);
-                    
-                    // Marcar como "sendo processada"
-                    processingProposals.add(proposal.id);
-
                     try {
-                        console.log(`🚀 Processando proposta ${proposal.id_proposta} (Status: ${proposal.status})`);
-                        console.log(`📋 pi_products:`, proposal.pi_products);
+                        const produtos = proposal.pi_products || [];
                         
-                        // VERIFICAR QUANTIDADE DE PRODUTOS NO DETALHAMENTO
-                        const temPiProducts = proposal.pi_products && Array.isArray(proposal.pi_products);
-                        const qtdProdutos = temPiProducts ? proposal.pi_products.length : 0;
-                        
-                        console.log(`📊 Quantidade de produtos no detalhamento: ${qtdProdutos}`);
-                        
-                        if (qtdProdutos > 1) {
-                            // MÚLTIPLOS PRODUTOS (2 ou mais) - CRIAR UMA CAMPANHA PARA CADA
-                            console.log(`📦 Criando ${qtdProdutos} campanhas separadas para proposta ${proposal.id_proposta}`);
+                        if (produtos.length === 0) {
+                            // SEM detalhamento
+                            const uniqueId = `${proposal.id}_0`; // ID único
                             
-                            for (let i = 0; i < proposal.pi_products.length; i++) {
-                                const piProduct = proposal.pi_products[i];
-                                console.log(`  → Produto ${i+1}/${qtdProdutos}: ${piProduct.produto} (R$ ${piProduct.valor})`);
-                                
-                                const newCampaign = {
-                                    rg: '',
-                                    nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${piProduct.produto || ''}_${i+1}`.trim(),
-                                    mes: '',
-                                    agencia: proposal.agencia || '',
-                                    anunciante: proposal.cliente || '',
-                                    campanha: '',
-                                    produto: piProduct.produto || '',
-                                    vertical: proposal.vertical || '',
-                                    valor_bruto: piProduct.valor || 0,
-                                    desc_agencia: '',
-                                    valor_liquido: piProduct.valor || 0,
-                                    executivo: proposal.executivo || '',
-                                    projeto: proposal.projeto_especial || '',
-                                    id_proposta: proposal.id_proposta || '',
-                                    obs: `Criada automaticamente - Produto ${i+1}/${qtdProdutos}`,
-                                    finalizada: 'Pendente',
-                                    faturar: 'Não',
-                                    proposta_id: proposal.id,
-                                    createdAt: serverTimestamp(),
-                                    updatedAt: serverTimestamp()
-                                };
-
-                                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
-                                console.log(`✅ Campanha ${i+1}/${qtdProdutos} criada`);
-                            }
-                        } else {
-                            // PRODUTO ÚNICO (0 ou 1 produto) - CRIAR APENAS UMA CAMPANHA
-                            console.log(`📦 Criando UMA ÚNICA campanha para proposta ${proposal.id_proposta}`);
-                            
-                            // Se tiver exatamente 1 produto em pi_products, usar ele; senão usar o campo produto principal
-                            const produtoInfo = (qtdProdutos === 1) 
-                                ? proposal.pi_products[0] 
-                                : { produto: proposal.produto, valor: proposal.valor };
-                            
-                            console.log(`  → Produto: ${produtoInfo.produto} (R$ ${produtoInfo.valor})`);
-                            
-                            const newCampaign = {
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), {
+                                unique_id: uniqueId, // Identificador único
                                 rg: '',
-                                nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_Auto`.trim(),
+                                nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${proposal.produto || ''}`.trim(),
                                 mes: '',
                                 agencia: proposal.agencia || '',
                                 anunciante: proposal.cliente || '',
                                 campanha: '',
-                                produto: produtoInfo.produto || '',
+                                produto: proposal.produto || '',
                                 vertical: proposal.vertical || '',
-                                valor_bruto: produtoInfo.valor || 0,
+                                valor_bruto: proposal.valor || 0,
                                 desc_agencia: '',
-                                valor_liquido: produtoInfo.valor || 0,
+                                valor_liquido: proposal.valor || 0,
                                 executivo: proposal.executivo || '',
                                 projeto: proposal.projeto_especial || '',
                                 id_proposta: proposal.id_proposta || '',
-                                obs: `Criada automaticamente de PI na casa`,
+                                obs: 'Criada de PI na casa',
                                 finalizada: 'Pendente',
                                 faturar: 'Não',
                                 proposta_id: proposal.id,
                                 createdAt: serverTimestamp(),
                                 updatedAt: serverTimestamp()
-                            };
-
-                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
-                            console.log(`✅ Campanha única criada`);
+                            });
+                            console.log('✅ 1 campanha');
+                            
+                        } else if (produtos.length === 1) {
+                            // 1 produto
+                            const prod = produtos[0];
+                            const uniqueId = `${proposal.id}_${prod.produto}_${prod.valor}`;
+                            
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), {
+                                unique_id: uniqueId,
+                                rg: '',
+                                nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${prod.produto || ''}`.trim(),
+                                mes: '',
+                                agencia: proposal.agencia || '',
+                                anunciante: proposal.cliente || '',
+                                campanha: '',
+                                produto: prod.produto || '',
+                                vertical: proposal.vertical || '',
+                                valor_bruto: prod.valor || 0,
+                                desc_agencia: '',
+                                valor_liquido: prod.valor || 0,
+                                executivo: proposal.executivo || '',
+                                projeto: proposal.projeto_especial || '',
+                                id_proposta: proposal.id_proposta || '',
+                                obs: 'Criada de PI na casa',
+                                finalizada: 'Pendente',
+                                faturar: 'Não',
+                                proposta_id: proposal.id,
+                                createdAt: serverTimestamp(),
+                                updatedAt: serverTimestamp()
+                            });
+                            console.log(`✅ 1 campanha`);
+                            
+                        } else {
+                            // Múltiplos produtos
+                            for (let i = 0; i < produtos.length; i++) {
+                                const prod = produtos[i];
+                                const uniqueId = `${proposal.id}_${i}_${prod.produto}`;
+                                
+                                // Verificar se já existe esta campanha específica
+                                const existeEsta = allCampaigns.some(c => c.unique_id === uniqueId);
+                                if (existeEsta) {
+                                    console.log(`  ⏭️ Produto ${i+1} já existe`);
+                                    continue;
+                                }
+                                
+                                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), {
+                                    unique_id: uniqueId,
+                                    rg: '',
+                                    nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${prod.produto || ''}_P${i+1}`.trim(),
+                                    mes: '',
+                                    agencia: proposal.agencia || '',
+                                    anunciante: proposal.cliente || '',
+                                    campanha: '',
+                                    produto: prod.produto || '',
+                                    vertical: proposal.vertical || '',
+                                    valor_bruto: prod.valor || 0,
+                                    desc_agencia: '',
+                                    valor_liquido: prod.valor || 0,
+                                    executivo: proposal.executivo || '',
+                                    projeto: proposal.projeto_especial || '',
+                                    id_proposta: proposal.id_proposta || '',
+                                    obs: `Produto ${i+1}/${produtos.length}`,
+                                    finalizada: 'Pendente',
+                                    faturar: 'Não',
+                                    proposta_id: proposal.id,
+                                    createdAt: serverTimestamp(),
+                                    updatedAt: serverTimestamp()
+                                });
+                                console.log(`  ✅ ${i+1}/${produtos.length}`);
+                            }
                         }
                         
-                        // MARCAR COMO PROCESSADA
-                        processedProposals.add(proposal.id);
-                        console.log(`✅ Proposta ${proposal.id} marcada como processada`);
-                        
                     } catch (error) {
-                        console.error('❌ Erro ao criar campanha(s) automática(s):', error);
-                    } finally {
-                        // Remover do controle de processamento
-                        processingProposals.delete(proposal.id);
+                        console.error('❌ Erro:', error);
                     }
                 }
             });
