@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Pipe 2026 - Campanhas</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terra Sales | Pipeline de Campanhas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --terra-green: #008751;
+            --terra-green-hover: #006b40;
+            --terra-bg: #f8fafc;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--terra-bg);
+        }
+        .modal-body::-webkit-scrollbar { width: 6px; }
+        .modal-body::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .modal-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .nav-item.active {
+            background-color: rgba(0, 135, 81, 0.1);
+            color: var(--terra-green);
+            border-right: 4px solid var(--terra-green);
+        }
+        .nav-item:hover:not(.active) {
+            background-color: #f1f5f9;
+        }
+
+        .btn-primary {
+            background-color: var(--terra-green);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: var(--terra-green-hover);
+        }
+
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .table-container {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        
+        #sidebar {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 135, 81, 0.1);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border-left-color: var(--terra-green);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- CABEÇALHO -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-[50] shrink-0">
+        <div class="flex items-center">
+            <button id="menuToggleBtn" class="text-slate-500 hover:bg-slate-100 p-2 rounded-lg mr-4 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <h1 class="text-2xl font-extrabold tracking-tighter">TERRA<span class="text-[--terra-green]">SALES</span> 
+                <span class="text-[12px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded ml-2 border border-emerald-100 font-bold">Campanhas</span>
+            </h1>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <span id="userEmailDisplay" class="text-xs font-semibold text-slate-500 hidden md:block">Conectando...</span>
+            <div class="h-10 w-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-200">
+                TS
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        
+        <!-- MENU LATERAL -->
+        <aside id="sidebar" class="absolute md:relative inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col transform -translate-x-full md:translate-x-0">
+            <nav class="flex-1 overflow-y-auto py-8 px-4 space-y-8">
+                <div>
+                    <p class="px-2 mb-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dashboard</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <button onclick="switchView('view-home')" id="nav-home" class="nav-item active w-full flex items-center p-3 rounded-xl transition-all text-sm font-semibold">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                Início
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div>
+                    <p class="px-2 mb-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gestão</p>
+                    <ul class="space-y-1">
+                        <li>
+                            <button onclick="switchView('view-operations')" id="nav-operations" class="nav-item w-full flex items-center p-3 rounded-xl transition-all text-sm font-semibold text-slate-600">
+                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                                Pipeline de Campanhas
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="p-4 bg-slate-50 border-t border-slate-100">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 flex items-center gap-3">
+                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase">Sincronizado</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay Mobile -->
+        <div id="mobileOverlay" class="fixed inset-0 bg-slate-900/40 z-30 hidden backdrop-blur-sm"></div>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+        <main id="mainContent" class="flex-1 overflow-hidden flex flex-col">
+            
+            <!-- VIEW 1: HOME -->
+            <div id="view-home" class="view-section p-6 md:p-8 overflow-y-auto">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-black text-slate-800 mb-2">Dashboard</h2>
+                    <p class="text-slate-500 text-sm">Bem-vindo ao sistema de gestão de campanhas</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-emerald-100 text-xs font-bold uppercase tracking-wider mb-2">Total de Campanhas</p>
+                                <p class="text-5xl font-black" id="totalCampaignsHome">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-sm text-emerald-100">Campanhas ativas no pipeline</p>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Ações Rápidas</p>
+                            </div>
+                        </div>
+                        <button onclick="switchView('view-operations')" class="w-full btn-primary text-white rounded-xl py-3 font-bold hover:shadow-lg transition-all">
+                            Ver Pipeline
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Integração</p>
+                            </div>
+                        </div>
+                        <div class="space-y-2 text-sm text-slate-600">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span>Comercial conectado</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                <span>Sync em tempo real</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: PIPELINE DE CAMPANHAS -->
+            <div id="view-operations" class="view-section hidden flex flex-col h-full">
+                <header class="border-b border-slate-200 bg-white px-6 md:px-8 py-6 shrink-0">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800">Pipeline de Campanhas</h2>
+                            <p class="text-sm text-slate-500 mt-1">Gerencie todas as campanhas em andamento</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="exportCampaignButton" class="px-5 py-2.5 bg-slate-600 hover:bg-slate-700 text-white rounded-xl font-bold transition-all shadow-sm flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                Exportar
+                            </button>
+                            <button id="addCampaignButton" class="px-5 py-2.5 btn-primary text-white rounded-xl font-bold transition-all shadow-md hover:shadow-lg flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Nova Campanha
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <div class="flex-1 overflow-auto p-6 md:p-8 bg-slate-50">
+                    <div class="table-container bg-white border border-slate-200">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">ID Proposta</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">RG</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Nome Completo</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Mês</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Anunciante</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Campanha</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Produto</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">V. Bruto</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Desc. (%)</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">V. Líquido</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Executivo</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Vertical</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Projeto</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-400 uppercase text-center">Faturar</th>
+                                    <th class="px-4 py-3 text-right text-[10px] font-bold text-slate-400 uppercase">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignsTableBody" class="divide-y divide-slate-100 bg-white">
+                                <tr>
+                                    <td colspan="16" class="px-6 py-20 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <div class="spinner mb-4"></div>
+                                            <span class="text-slate-400 font-medium text-sm">Carregando dados da API...</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- MODAL CAMPANHAS -->
+    <div id="campaignModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center border-b border-slate-200 p-6">
+                <h3 id="campaignModalTitle" class="text-2xl font-black text-slate-800">Nova Campanha</h3>
+                <button id="closeCampaignModalBtn" type="button" class="text-slate-400 hover:bg-slate-100 rounded-lg p-2 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="campaignForm" class="modal-body overflow-y-auto px-6 py-6 flex-1">
+                <input type="hidden" id="editCampaignId">
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Linha 1: ID Proposta e RG -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">ID Proposta</label>
+                        <input type="text" name="id_proposta" id="camp_id_proposta" readonly class="w-full bg-slate-100 border border-slate-200 text-sm rounded-lg p-2.5 cursor-not-allowed text-slate-600 font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">RG</label>
+                        <input type="text" name="rg" id="camp_rg" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 font-semibold" placeholder="26-XXXX">
+                        <p class="text-xs text-slate-500 mt-1">💡 Próximo disponível: <span id="nextRgSuggestion" class="font-bold text-emerald-600">-</span></p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Nome Completo *</label>
+                        <input type="text" name="nome" id="camp_nome" readonly class="w-full bg-slate-100 border border-slate-200 text-sm rounded-lg p-2.5 cursor-not-allowed text-slate-600">
+                    </div>
+
+                    <!-- Linha 2 -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Mês *</label>
+                        <select name="mes" id="camp_mes" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+                            <option value="">Selecione</option>
+                            <option value="Jan">Jan</option>
+                            <option value="Fev">Fev</option>
+                            <option value="Mar">Mar</option>
+                            <option value="Abr">Abr</option>
+                            <option value="Mai">Mai</option>
+                            <option value="Jun">Jun</option>
+                            <option value="Jul">Jul</option>
+                            <option value="Ago">Ago</option>
+                            <option value="Set">Set</option>
+                            <option value="Out">Out</option>
+                            <option value="Nov">Nov</option>
+                            <option value="Dez">Dez</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">PI Agência *</label>
+                        <input type="text" name="agencia" id="camp_agencia" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Anunciante *</label>
+                        <input type="text" name="anunciante" id="camp_anunciante" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+                    </div>
+
+                    <!-- Linha 3 -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Campanha *</label>
+                        <input type="text" name="campanha" id="camp_campanha" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Produto</label>
+                        <input type="text" name="produto" id="camp_produto" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- Linha 4 -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Valor Bruto (R$)</label>
+                        <input type="number" name="valor_bruto" id="camp_valor_bruto" step="0.01" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Desc. Agência (%)</label>
+                        <input type="number" name="desc_agencia" id="camp_desc_agencia" step="0.01" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Valor Líquido (R$)</label>
+                        <input type="number" name="valor_liquido" id="camp_valor_liquido" readonly step="0.01" class="w-full bg-slate-100 border border-slate-200 text-sm rounded-lg p-2.5 cursor-not-allowed text-slate-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Executivo *</label>
+                        <select name="executivo" id="camp_executivo" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500" required>
+                            <option value="">Selecione</option>
+                            <option value="Barbara">Barbara</option>
+                            <option value="Marcio">Marcio</option>
+                            <option value="Raphael">Raphael</option>
+                            <option value="Fernando">Fernando</option>
+                            <option value="Guilherme">Guilherme</option>
+                            <option value="Leticia">Leticia</option>
+                            <option value="Jessica">Jessica</option>
+                            <option value="Vanessa">Vanessa</option>
+                            <option value="Renan">Renan</option>
+                            <option value="Lilian">Lilian</option>
+                            <option value="Bianca">Bianca</option>
+                        </select>
+                    </div>
+
+                    <!-- Linha 5 -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Vertical</label>
+                        <select name="vertical" id="camp_vertical" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                            <option value="">Selecione</option>
+                            <option value="Automotivo">Automotivo</option>
+                            <option value="Financeiro">Financeiro</option>
+                            <option value="Tecnologia">Tecnologia</option>
+                            <option value="Varejo">Varejo</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Projeto</label>
+                        <input type="text" name="projeto" id="camp_projeto" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">OBS</label>
+                        <input type="text" name="obs" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <!-- Linha 6 -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Status da Campanha</label>
+                        <select name="finalizada" id="camp_finalizada" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                            <option value="Pendente">Pendente</option>
+                            <option value="Em Andamento">Em Andamento</option>
+                            <option value="Finalizada">Finalizada</option>
+                            <option value="Cancelada">Cancelada</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">Faturar?</label>
+                        <select name="faturar" id="camp_faturar" class="w-full bg-white border border-slate-300 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500">
+                            <option value="Não">Não</option>
+                            <option value="Sim">Sim</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-6">
+                    <button type="button" id="cancelCampaignBtn" class="px-6 py-2.5 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 font-semibold transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 btn-primary text-white rounded-lg font-bold transition-all shadow-md hover:shadow-lg">
+                        Salvar Campanha
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FIREBASE SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, serverTimestamp, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        // FIREBASE CONFIG
+        let firebaseConfig;
+        let appId = 'meu-pipeline-propostas';
+
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+            appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        } else {
+            firebaseConfig = {
+                apiKey: "AIzaSyABUSXzV1r2Ri7gkZaE8i01dCpwoDF1YEA",
+                authDomain: "trr-prd-pipe-comercial-26.firebaseapp.com",
+                projectId: "trr-prd-pipe-comercial-26",
+                storageBucket: "trr-prd-pipe-comercial-26.firebasestorage.app",
+                messagingSenderId: "132733350570",
+                appId: "1:132733350570:web:900eae181779e05e6f96d3"
+            };
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const CAMPAIGNS_COLLECTION = 'campaigns_pipeline';
+        const PROPOSALS_COLLECTION = 'proposals';
+
+        let allCampaigns = [];
+        let allProposals = [];
+        let currentUser = null;
+        let processedProposals = new Set();
+
+        // --- FUNÇÃO PARA REPLICAR RG DO CAMPANHAS PARA O PIPELINE COMERCIAL ---
+        const replicateRGToCommercialPipeline = async (idProposta, novoRG) => {
+            if (!idProposta || !novoRG || !db) {
+                console.log('Replicação de RG para comercial cancelada: dados insuficientes', {idProposta, novoRG});
+                return;
+            }
+
+            try {
+                console.log(`🔄 [Campanhas→Comercial] Replicando RG: ${novoRG} para ID Proposta: ${idProposta}`);
+                
+                // Buscar todas as propostas no PIPELINE COMERCIAL com o mesmo ID Proposta
+                const proposalsRef = collection(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION);
+                const q = query(proposalsRef, where('id_proposta', '==', idProposta));
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    console.log(`⚠️ [Campanhas→Comercial] Nenhuma proposta comercial encontrada com ID Proposta: ${idProposta}`);
+                    return;
+                }
+
+                // Atualizar o RG em todas as propostas comerciais encontradas
+                let updatedCount = 0;
+                const updatePromises = [];
+                
+                querySnapshot.forEach((docSnapshot) => {
+                    const proposalRef = doc(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION, docSnapshot.id);
+                    updatePromises.push(
+                        updateDoc(proposalRef, {
+                            numero_rg: novoRG,
+                            updatedAt: serverTimestamp(),
+                            rg_synced_from_campaigns: true // Flag para rastrear origem da sincronização
+                        })
+                    );
+                    updatedCount++;
+                });
+
+                await Promise.all(updatePromises);
+                console.log(`✅ [Campanhas→Comercial] RG replicado com sucesso para ${updatedCount} proposta(s) do pipeline comercial`);
+                
+            } catch (error) {
+                console.error('❌ [Campanhas→Comercial] Erro ao replicar RG:', error);
+            }
+        };
+
+        // ELEMENTOS DOM
+        const campaignModal = document.getElementById('campaignModal');
+        const campaignForm = document.getElementById('campaignForm');
+        const campaignsTableBody = document.getElementById('campaignsTableBody');
+
+        // NAVEGAÇÃO
+        window.switchView = (viewId) => {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
+            document.getElementById(viewId)?.classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(`[onclick="switchView('${viewId}')"]`)?.classList.add('active');
+            
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('mobileOverlay').classList.add('hidden');
+            }
+        };
+
+        // MODAL
+        const showCampaignModal = (campaign = null) => {
+            campaignForm.reset();
+            
+            // Mostrar próximo RG disponível
+            const nextRg = generateNextRg();
+            const suggestionEl = document.getElementById('nextRgSuggestion');
+            if (suggestionEl) suggestionEl.textContent = nextRg;
+            
+            if (campaign) {
+                document.getElementById('campaignModalTitle').textContent = 'Editar Campanha';
+                document.getElementById('editCampaignId').value = campaign.id;
+                document.getElementById('camp_id_proposta').value = campaign.id_proposta || '';
+                document.getElementById('camp_rg').value = campaign.rg || '';
+                document.getElementById('camp_nome').value = campaign.nome || '';
+                document.getElementById('camp_mes').value = campaign.mes || '';
+                document.getElementById('camp_agencia').value = campaign.agencia || '';
+                document.getElementById('camp_anunciante').value = campaign.anunciante || '';
+                document.getElementById('camp_campanha').value = campaign.campanha || '';
+                document.getElementById('camp_produto').value = campaign.produto || '';
+                document.getElementById('camp_valor_bruto').value = campaign.valor_bruto || '';
+                document.getElementById('camp_desc_agencia').value = campaign.desc_agencia || '';
+                document.getElementById('camp_valor_liquido').value = campaign.valor_liquido || '';
+                document.getElementById('camp_executivo').value = campaign.executivo || '';
+                document.getElementById('camp_vertical').value = campaign.vertical || '';
+                document.getElementById('camp_projeto').value = campaign.projeto || '';
+                campaignForm.querySelector('[name="obs"]').value = campaign.obs || '';
+                document.getElementById('camp_finalizada').value = campaign.finalizada || 'Pendente';
+                document.getElementById('camp_faturar').value = campaign.faturar || 'Não';
+            } else {
+                document.getElementById('campaignModalTitle').textContent = 'Nova Campanha';
+                // RG INICIA VAZIO - será preenchido quando o time tiver o contrato
+                document.getElementById('camp_rg').value = '';
+            }
+            campaignModal.classList.remove('hidden');
+        };
+
+        const hideCampaignModal = () => {
+            campaignModal.classList.add('hidden');
+            campaignForm.reset();
+        };
+
+        // GERAÇÃO DE RG
+        const generateNextRg = () => {
+            const lastRgNum = allCampaigns.map(c => parseInt(c.rg?.split('-')[1]) || 0).sort((a,b)=>b-a)[0] || 0;
+            return `26-${String(lastRgNum + 1).padStart(4, '0')}`;
+        };
+
+        // NOME AUTOMÁTICO
+        const updateCampaignName = () => {
+            const parts = ['camp_rg', 'camp_agencia', 'camp_anunciante', 'camp_campanha', 'camp_mes']
+                .map(id => document.getElementById(id).value.trim())
+                .filter(p => p);
+            document.getElementById('camp_nome').value = parts.join('_');
+        };
+
+        const calculateLiquido = () => {
+            const bruto = parseFloat(document.getElementById('camp_valor_bruto').value) || 0;
+            const desc = parseFloat(document.getElementById('camp_desc_agencia').value) || 0;
+            document.getElementById('camp_valor_liquido').value = (bruto * (1 - desc/100)).toFixed(2);
+        };
+
+        ['camp_mes', 'camp_agencia', 'camp_anunciante', 'camp_campanha'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateCampaignName);
+            document.getElementById(id).addEventListener('change', updateCampaignName);
+        });
+        ['camp_valor_bruto', 'camp_desc_agencia'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateLiquido);
+        });
+
+        // AÇÕES
+        window.editCampaignAction = (id) => {
+            const campaign = allCampaigns.find(c => c.id === id);
+            if (campaign) showCampaignModal(campaign);
+        };
+
+        window.duplicateCampaignAction = async (docId) => {
+            const camp = allCampaigns.find(c => c.id === docId);
+            if(!camp || !confirm("Duplicar esta campanha com NOVO RG?")) return;
+            try {
+                const { id, rg, nome, createdAt, updatedAt, ...data } = camp;
+                const newRg = generateNextRg();
+                const newName = [newRg, data.agencia, data.anunciante, data.campanha, data.mes].filter(p => p).join('_');
+
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), {
+                    ...data, rg: newRg, nome: newName, 
+                    createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                });
+                
+                // REPLICAR NOVO RG PARA O PIPELINE COMERCIAL
+                if (data.id_proposta) {
+                    await replicateRGToCommercialPipeline(data.id_proposta, newRg);
+                }
+            } catch(e) { alert("Erro ao duplicar: " + e.message); }
+        };
+
+        window.deleteCampaignAction = async (docId) => {
+            if(!confirm("Excluir esta campanha permanentemente?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION, docId));
+            } catch(e) { alert("Erro ao excluir: " + e.message); }
+        };
+
+        // SUBMIT - COM SINCRONIZAÇÃO DE RG PARA O COMERCIAL E ENTRE CAMPANHAS
+        campaignForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(campaignForm).entries());
+            const editId = document.getElementById('editCampaignId').value;
+            data.updatedAt = serverTimestamp();
+
+            try {
+                if (editId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION, editId), data);
+                    
+                    // REPLICAR RG PARA TODAS AS PROPOSTAS DO PIPELINE COMERCIAL
+                    if (data.rg && data.id_proposta) {
+                        await replicateRGToCommercialPipeline(data.id_proposta, data.rg);
+                        
+                        // SINCRONIZAR RG PARA TODAS AS CAMPANHAS COM MESMO ID_PROPOSTA
+                        await syncRgToOtherCampaigns(data.id_proposta, data.rg, editId);
+                    }
+                } else {
+                    data.createdAt = serverTimestamp();
+                    const newDocRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), data);
+                    
+                    // REPLICAR RG PARA O COMERCIAL TAMBÉM EM NOVAS CAMPANHAS
+                    if (data.rg && data.id_proposta) {
+                        await replicateRGToCommercialPipeline(data.id_proposta, data.rg);
+                    }
+                }
+                hideCampaignModal();
+            } catch (e) { alert("Erro: " + e.message); }
+        };
+
+        // FUNÇÃO PARA SINCRONIZAR RG ENTRE CAMPANHAS DO MESMO ID_PROPOSTA
+        const syncRgToOtherCampaigns = async (idProposta, rg, currentCampaignId) => {
+            try {
+                // Encontrar todas as campanhas com o mesmo ID_PROPOSTA
+                const relatedCampaigns = allCampaigns.filter(c => 
+                    c.id_proposta === idProposta && c.id !== currentCampaignId
+                );
+                
+                // Atualizar o RG em todas elas
+                for (const campaign of relatedCampaigns) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION, campaign.id), {
+                        rg: rg,
+                        updatedAt: serverTimestamp()
+                    });
+                }
+                
+                if (relatedCampaigns.length > 0) {
+                    console.log(`✅ RG ${rg} sincronizado com ${relatedCampaigns.length} campanha(s) relacionada(s)`);
+                }
+            } catch (error) {
+                console.error('Erro ao sincronizar RG entre campanhas:', error);
+            }
+        };
+
+        // RENDER TABELA
+        const renderTable = () => {
+            if (!campaignsTableBody) return;
+            if (allCampaigns.length === 0) {
+                campaignsTableBody.innerHTML = '<tr><td colspan="16" class="px-6 py-10 text-center text-slate-400 italic">Nenhuma campanha encontrada.</td></tr>';
+                return;
+            }
+
+            campaignsTableBody.innerHTML = allCampaigns.map(c => `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-3 text-sm font-mono text-indigo-600 font-semibold">${c.id_proposta || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-bold text-emerald-700">${c.rg || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-slate-700 max-w-[200px] truncate" title="${c.nome || ''}">${c.nome || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${c.mes || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700 font-medium">${c.anunciante || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600 max-w-[140px] truncate" title="${c.campanha || ''}">${c.campanha || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-700">${c.produto || '-'}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-emerald-700">R$ ${parseFloat(c.valor_bruto || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${c.desc_agencia ? parseFloat(c.desc_agencia).toFixed(1) + '%' : '-'}</td>
+                    <td class="px-4 py-3 text-sm font-bold text-slate-900">R$ ${parseFloat(c.valor_liquido || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${c.executivo || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${c.vertical || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-slate-600">${c.projeto || '-'}</td>
+                    <td class="px-4 py-3">
+                        <span class="status-badge ${
+                            c.finalizada === 'Finalizada' ? 'bg-emerald-100 text-emerald-700' :
+                            c.finalizada === 'Em Andamento' ? 'bg-blue-100 text-blue-700' :
+                            c.finalizada === 'Cancelada' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'
+                        }">${c.finalizada || 'Pendente'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="text-xs font-bold ${c.faturar === 'Sim' ? 'text-emerald-600' : 'text-slate-400'}">${c.faturar || 'Não'}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                        <button onclick="editCampaignAction('${c.id}')" class="p-1.5 hover:bg-emerald-50 text-emerald-600 rounded-lg transition-colors" title="Editar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                        </button>
+                        <button onclick="duplicateCampaignAction('${c.id}')" class="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors" title="Duplicar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                        </button>
+                        <button onclick="deleteCampaignAction('${c.id}')" class="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors" title="Excluir">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                    </td>
+                </tr>`).join('');
+            document.getElementById('totalCampaignsHome').textContent = allCampaigns.length;
+        };
+
+        // EXPORT CSV
+        document.getElementById('exportCampaignButton').onclick = () => {
+            const csv = Papa.unparse(allCampaigns);
+            const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `terra_sales_pipeline_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        };
+
+        // INTEGRAÇÃO COM COMERCIAL - COM SUPORTE A MÚLTIPLOS PRODUTOS
+        const setupComercialListener = () => {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION), async (snapshot) => {
+                allProposals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                snapshot.docChanges().forEach(async (change) => {
+                    const proposal = { id: change.doc.id, ...change.doc.data() };
+                    
+                    if (proposal.status === 'PI na casa') {
+                        
+                        // Verificar se já foi processada
+                        if (processedProposals.has(proposal.id)) return;
+                        
+                        // Verificar se já existem campanhas vinculadas
+                        const existingCampaigns = allCampaigns.filter(c => c.proposta_id === proposal.id);
+                        if (existingCampaigns.length > 0) {
+                            processedProposals.add(proposal.id);
+                            return;
+                        }
+
+                        try {
+                            // VERIFICAR SE HÁ MÚLTIPLOS PRODUTOS (pi_products)
+                            if (proposal.pi_products && Array.isArray(proposal.pi_products) && proposal.pi_products.length > 0) {
+                                // CRIAR UMA CAMPANHA PARA CADA PRODUTO
+                                for (let i = 0; i < proposal.pi_products.length; i++) {
+                                    const piProduct = proposal.pi_products[i];
+                                    
+                                    const newCampaign = {
+                                        rg: '', // RG INICIA VAZIO - será preenchido quando tiver contrato
+                                        nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${piProduct.produto || ''}_${i+1}`.trim(),
+                                        mes: '',
+                                        agencia: proposal.agencia || '',
+                                        anunciante: proposal.cliente || '',
+                                        campanha: '',
+                                        produto: piProduct.produto || '', // Produto específico
+                                        vertical: proposal.vertical || '',
+                                        valor_bruto: piProduct.valor || 0, // Valor específico do produto
+                                        desc_agencia: '',
+                                        valor_liquido: piProduct.valor || 0,
+                                        executivo: proposal.executivo || '',
+                                        projeto: proposal.projeto_especial || '',
+                                        id_proposta: proposal.id_proposta || '',
+                                        obs: `Criada automaticamente - Produto ${i+1}/${proposal.pi_products.length}`,
+                                        finalizada: 'Pendente',
+                                        faturar: 'Não',
+                                        proposta_id: proposal.id,
+                                        createdAt: serverTimestamp(),
+                                        updatedAt: serverTimestamp()
+                                    };
+
+                                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
+                                    console.log(`✅ Campanha criada para produto ${i+1}: ${piProduct.produto}`);
+                                }
+                            } else {
+                                // CRIAR UMA ÚNICA CAMPANHA (produto único)
+                                const newCampaign = {
+                                    rg: '', // RG INICIA VAZIO - será preenchido quando tiver contrato
+                                    nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_Auto`.trim(),
+                                    mes: '',
+                                    agencia: proposal.agencia || '',
+                                    anunciante: proposal.cliente || '',
+                                    campanha: '',
+                                    produto: proposal.produto || '',
+                                    vertical: proposal.vertical || '',
+                                    valor_bruto: proposal.valor || '',
+                                    desc_agencia: '',
+                                    valor_liquido: proposal.valor || '',
+                                    executivo: proposal.executivo || '',
+                                    projeto: proposal.projeto_especial || '',
+                                    id_proposta: proposal.id_proposta || '',
+                                    obs: `Criada automaticamente de PI na casa`,
+                                    finalizada: 'Pendente',
+                                    faturar: 'Não',
+                                    proposta_id: proposal.id,
+                                    createdAt: serverTimestamp(),
+                                    updatedAt: serverTimestamp()
+                                };
+
+                                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
+                                console.log('✅ Campanha criada (produto único)');
+                            }
+                            
+                            processedProposals.add(proposal.id);
+                        } catch (error) {
+                            console.error('Erro ao criar campanha(s) automática(s):', error);
+                        }
+                    }
+                });
+            });
+        };
+
+        // AUTH & INIT
+        const init = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+                await signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, u => {
+                currentUser = u;
+                document.getElementById('userEmailDisplay').textContent = u ? (u.isAnonymous ? 'Modo Convidado' : u.email) : 'Desconectado';
+                if(u) {
+                    // Listener Campanhas
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), snap => {
+                        allCampaigns = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        renderTable();
+                    });
+
+                    // Listener Comercial (PI na casa)
+                    setupComercialListener();
+                }
+            });
+        };
+        init();
+
+        // UI ACTIONS
+        document.getElementById('addCampaignButton').onclick = () => showCampaignModal();
+        document.getElementById('closeCampaignModalBtn').onclick = hideCampaignModal;
+        document.getElementById('cancelCampaignBtn').onclick = hideCampaignModal;
+        
+        document.getElementById('menuToggleBtn').onclick = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile) {
+                // Mobile: toggle sidebar e overlay
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            } else {
+                // Desktop: apenas toggle sidebar
+                sidebar.classList.toggle('-translate-x-full');
+            }
+        };
+        
+        document.getElementById('mobileOverlay').onclick = () => {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('mobileOverlay').classList.add('hidden');
+        };
+        
+        campaignModal.onclick = (e) => { if(e.target === campaignModal) hideCampaignModal(); };
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
