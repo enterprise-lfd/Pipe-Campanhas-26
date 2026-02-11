@@ -695,11 +695,12 @@
                 
                 if (proposal && proposal.id) {
                     console.log('✅ Proposta encontrada! Doc ID:', proposal.id);
+                    // IMPORTANTE: O campo no pipe comercial é "numero_rg"
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION, proposal.id), {
-                        rg: rg,
+                        numero_rg: rg,  // ← CAMPO CORRETO DO COMERCIAL
                         updatedAt: serverTimestamp()
                     });
-                    console.log(`✅ RG ${rg} sincronizado com sucesso na proposta ${idProposta}`);
+                    console.log(`✅ RG ${rg} sincronizado com sucesso no campo numero_rg da proposta ${idProposta}`);
                 } else {
                     console.warn('⚠️ Proposta não encontrada com ID:', idProposta);
                     console.log('📋 IDs disponíveis:', allProposals.map(p => p.id_proposta));
