@@ -880,85 +880,81 @@
 
         // INTEGRAÇÃO COM COMERCIAL
         const setupComercialListener = () => {
+            // Controle de processamento para evitar duplicações
+            const processingProposals = new Set(); // Propostas sendo processadas AGORA
+            
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', PROPOSALS_COLLECTION), async (snapshot) => {
                 allProposals = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                console.log(`📊 Propostas carregadas/atualizadas: ${allProposals.length}`);
                 
-                snapshot.docChanges().forEach(async (change) => {
+                // Processar mudanças sequencialmente (não usar forEach com async)
+                for (const change of snapshot.docChanges()) {
                     const proposal = { id: change.doc.id, ...change.doc.data() };
                     
-                    if (proposal.status === 'PI na casa') {
-                        if (processedProposals.has(proposal.id)) return;
+                    // Só processar se for PI na casa
+                    if (proposal.status !== 'PI na casa') continue;
+                    
+                    console.log(`🔍 Detectada proposta "PI na casa": ${proposal.id_proposta} (ID: ${proposal.id})`);
+                    
+                    // PROTEÇÃO 1: Já foi processada anteriormente?
+                    if (processedProposals.has(proposal.id)) {
+                        console.log(`⏭️ Proposta ${proposal.id} JÁ FOI PROCESSADA ANTERIORMENTE, pulando...`);
+                        continue;
+                    }
+                    
+                    // PROTEÇÃO 2: Está sendo processada AGORA?
+                    if (processingProposals.has(proposal.id)) {
+                        console.log(`⏳ Proposta ${proposal.id} JÁ ESTÁ SENDO PROCESSADA, pulando...`);
+                        continue;
+                    }
+                    
+                    // PROTEÇÃO 3: Já existem campanhas criadas para esta proposta?
+                    const existingCampaigns = allCampaigns.filter(c => c.proposta_id === proposal.id);
+                    if (existingCampaigns.length > 0) {
+                        console.log(`✅ Proposta ${proposal.id} JÁ POSSUI ${existingCampaigns.length} campanha(s), marcando como processada`);
+                        processedProposals.add(proposal.id);
+                        continue;
+                    }
+
+                    console.log(`✨ NOVA proposta detectada! Iniciando criação de campanha(s)...`);
+                    
+                    // Marcar como "sendo processada"
+                    processingProposals.add(proposal.id);
+
+                    try {
+                        console.log(`🚀 Processando proposta ${proposal.id_proposta} (Status: ${proposal.status})`);
+                        console.log(`📋 pi_products:`, proposal.pi_products);
                         
-                        const existingCampaigns = allCampaigns.filter(c => c.proposta_id === proposal.id);
-                        if (existingCampaigns.length > 0) {
-                            processedProposals.add(proposal.id);
-                            return;
-                        }
-
-                        try {
-                            // VERIFICAR SE HÁ MÚLTIPLOS PRODUTOS (pi_products)
-                            const hasMultipleProducts = proposal.pi_products && 
-                                                       Array.isArray(proposal.pi_products) && 
-                                                       proposal.pi_products.length > 1; // APENAS SE TIVER MAIS DE 1
+                        // VERIFICAR QUANTIDADE DE PRODUTOS NO DETALHAMENTO
+                        const temPiProducts = proposal.pi_products && Array.isArray(proposal.pi_products);
+                        const qtdProdutos = temPiProducts ? proposal.pi_products.length : 0;
+                        
+                        console.log(`📊 Quantidade de produtos no detalhamento: ${qtdProdutos}`);
+                        
+                        if (qtdProdutos > 1) {
+                            // MÚLTIPLOS PRODUTOS (2 ou mais) - CRIAR UMA CAMPANHA PARA CADA
+                            console.log(`📦 Criando ${qtdProdutos} campanhas separadas para proposta ${proposal.id_proposta}`);
                             
-                            if (hasMultipleProducts) {
-                                // MÚLTIPLOS PRODUTOS - CRIAR UMA CAMPANHA PARA CADA
-                                console.log(`📦 Criando ${proposal.pi_products.length} campanhas para proposta ${proposal.id_proposta}`);
-                                
-                                for (let i = 0; i < proposal.pi_products.length; i++) {
-                                    const piProduct = proposal.pi_products[i];
-                                    
-                                    const newCampaign = {
-                                        rg: '',
-                                        nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${piProduct.produto || ''}_${i+1}`.trim(),
-                                        mes: '',
-                                        agencia: proposal.agencia || '',
-                                        anunciante: proposal.cliente || '',
-                                        campanha: '',
-                                        produto: piProduct.produto || '',
-                                        vertical: proposal.vertical || '',
-                                        valor_bruto: piProduct.valor || 0,
-                                        desc_agencia: '',
-                                        valor_liquido: piProduct.valor || 0,
-                                        executivo: proposal.executivo || '',
-                                        projeto: proposal.projeto_especial || '',
-                                        id_proposta: proposal.id_proposta || '',
-                                        obs: `Criada automaticamente - Produto ${i+1}/${proposal.pi_products.length}`,
-                                        finalizada: 'Pendente',
-                                        faturar: 'Não',
-                                        proposta_id: proposal.id,
-                                        createdAt: serverTimestamp(),
-                                        updatedAt: serverTimestamp()
-                                    };
-
-                                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
-                                    console.log(`✅ Campanha ${i+1} criada - Produto: ${piProduct.produto}`);
-                                }
-                            } else {
-                                // PRODUTO ÚNICO - CRIAR APENAS UMA CAMPANHA
-                                console.log(`📦 Criando 1 campanha para proposta ${proposal.id_proposta}`);
-                                
-                                // Se tiver 1 produto em pi_products, usar ele; senão usar o campo produto principal
-                                const produtoInfo = (proposal.pi_products && proposal.pi_products.length === 1) 
-                                    ? proposal.pi_products[0] 
-                                    : { produto: proposal.produto, valor: proposal.valor };
+                            for (let i = 0; i < proposal.pi_products.length; i++) {
+                                const piProduct = proposal.pi_products[i];
+                                console.log(`  → Produto ${i+1}/${qtdProdutos}: ${piProduct.produto} (R$ ${piProduct.valor})`);
                                 
                                 const newCampaign = {
                                     rg: '',
-                                    nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_Auto`.trim(),
+                                    nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_${piProduct.produto || ''}_${i+1}`.trim(),
                                     mes: '',
                                     agencia: proposal.agencia || '',
                                     anunciante: proposal.cliente || '',
                                     campanha: '',
-                                    produto: produtoInfo.produto || '',
+                                    produto: piProduct.produto || '',
                                     vertical: proposal.vertical || '',
-                                    valor_bruto: produtoInfo.valor || 0,
+                                    valor_bruto: piProduct.valor || 0,
                                     desc_agencia: '',
-                                    valor_liquido: produtoInfo.valor || 0,
+                                    valor_liquido: piProduct.valor || 0,
                                     executivo: proposal.executivo || '',
                                     projeto: proposal.projeto_especial || '',
                                     id_proposta: proposal.id_proposta || '',
-                                    obs: `Criada automaticamente de PI na casa`,
+                                    obs: `Criada automaticamente - Produto ${i+1}/${qtdProdutos}`,
                                     finalizada: 'Pendente',
                                     faturar: 'Não',
                                     proposta_id: proposal.id,
@@ -967,15 +963,57 @@
                                 };
 
                                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
-                                console.log(`✅ Campanha única criada - Produto: ${produtoInfo.produto}`);
+                                console.log(`✅ Campanha ${i+1}/${qtdProdutos} criada`);
                             }
+                        } else {
+                            // PRODUTO ÚNICO (0 ou 1 produto) - CRIAR APENAS UMA CAMPANHA
+                            console.log(`📦 Criando UMA ÚNICA campanha para proposta ${proposal.id_proposta}`);
                             
-                            processedProposals.add(proposal.id);
-                        } catch (error) {
-                            console.error('Erro ao criar campanha(s) automática(s):', error);
+                            // Se tiver exatamente 1 produto em pi_products, usar ele; senão usar o campo produto principal
+                            const produtoInfo = (qtdProdutos === 1) 
+                                ? proposal.pi_products[0] 
+                                : { produto: proposal.produto, valor: proposal.valor };
+                            
+                            console.log(`  → Produto: ${produtoInfo.produto} (R$ ${produtoInfo.valor})`);
+                            
+                            const newCampaign = {
+                                rg: '',
+                                nome: `${proposal.agencia || ''}_${proposal.cliente || ''}_Auto`.trim(),
+                                mes: '',
+                                agencia: proposal.agencia || '',
+                                anunciante: proposal.cliente || '',
+                                campanha: '',
+                                produto: produtoInfo.produto || '',
+                                vertical: proposal.vertical || '',
+                                valor_bruto: produtoInfo.valor || 0,
+                                desc_agencia: '',
+                                valor_liquido: produtoInfo.valor || 0,
+                                executivo: proposal.executivo || '',
+                                projeto: proposal.projeto_especial || '',
+                                id_proposta: proposal.id_proposta || '',
+                                obs: `Criada automaticamente de PI na casa`,
+                                finalizada: 'Pendente',
+                                faturar: 'Não',
+                                proposta_id: proposal.id,
+                                createdAt: serverTimestamp(),
+                                updatedAt: serverTimestamp()
+                            };
+
+                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', CAMPAIGNS_COLLECTION), newCampaign);
+                            console.log(`✅ Campanha única criada`);
                         }
+                        
+                        // MARCAR COMO PROCESSADA
+                        processedProposals.add(proposal.id);
+                        console.log(`✅ Proposta ${proposal.id} marcada como processada`);
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao criar campanha(s) automática(s):', error);
+                    } finally {
+                        // Remover do controle de processamento
+                        processingProposals.delete(proposal.id);
                     }
-                });
+                }
             });
         };
 
